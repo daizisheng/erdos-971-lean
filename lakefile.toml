@@ -1,0 +1,15 @@
+name = "Erdos971"
+version = "0.1.0"
+defaultTargets = ["Erdos971"]
+
+[leanOptions]
+pp.unicode.fun = true
+autoImplicit = false
+
+[[require]]
+name = "mathlib"
+git = "https://github.com/leanprover-community/mathlib4"
+rev = "921b8d39f71a5c813b526f38e4033417d40b4c3d"
+
+[[lean_lib]]
+name = "Erdos971"
