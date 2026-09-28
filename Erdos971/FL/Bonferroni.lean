@@ -3,7 +3,7 @@ import Mathlib
 /-!
 # Fundamental lemma, part A: weighted Bonferroni, Rankin bound, product perturbation
 
-Route: logarithmically blocked Bonferroni sieve (see `attack/971/lean_fl/q1_astra.md`).
+Route: a logarithmically blocked Bonferroni (Brun-type) sieve; see `BLUEPRINT.md`.
 -/
 
 open Finset

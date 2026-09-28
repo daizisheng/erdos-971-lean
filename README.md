@@ -75,3 +75,8 @@ numbers in place of Λ_R.
 | `Erdos971/Main.lean` | assembly: `erdos_971 : Erdos971Statement` |
 
 See `BLUEPRINT.md` for the proof plan. No `sorry` anywhere.
+
+## License
+
+Apache-2.0 (see `LICENSE`). Files under `vendor/` are © the PrimeNumberTheoremAnd authors, Apache-2.0,
+redistributed unmodified.

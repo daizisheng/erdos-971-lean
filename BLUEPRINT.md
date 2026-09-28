@@ -1,8 +1,7 @@
 # Blueprint
 
 Conditional proof of Erdős #971 (`Erdos971Statement` in `Erdos971/Statement.lean`) from the single axiom `fundamental_lemma` in
-`Erdos971/Axioms.lean` (PNT, Mertens and Bombieri–Vinogradov are proved in `Bridge.lean` from PrimeNumberTheoremAnd and kimihiro64/bombieri-vinogradov). The argument follows the reviewed proof (`attack/971/01_structure.md` in the campaign
-repo), re-organised for formalization: **all singular series are finite products over primes `p < z`**
+`Erdos971/Axioms.lean` (PNT, Mertens and Bombieri–Vinogradov are proved in `Bridge.lean` from PrimeNumberTheoremAnd and kimihiro64/bombieri-vinogradov). The argument is re-organised for formalization: **all singular series are finite products over primes `p < z`**
 (no infinite products or limits), and every `o(1)` is an explicit `Tendsto … atTop` in `q` with `u` fixed.
 
 ## 0. Notation (file `Defs.lean`)
