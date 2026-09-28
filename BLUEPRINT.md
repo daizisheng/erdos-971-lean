@@ -89,3 +89,11 @@ subtract `π((1+c)x) − π(x)` (S7) with `c = 1/(32B)` ⇒ no prime `≤ (1+c)x
 - The prime–rough main terms in `sieve_dim1` are now `π(x−hq) − π(z) + π(x) − π(hq)`; `Moments`
   converts them with `pi_Li_close` (PNT + `li_asymp`), paying an error controlled by the new
   `sum_S2_le : Σ_{h<K} S2 z (hq) ≤ Qz · K`.
+
+## Changes in v0.3
+
+- The fundamental lemma is proved (`FL/`), following a logarithmically blocked Bonferroni sieve:
+  blocks `B_j = {p : z^{2^{-(j+1)}} ≤ p < z^{2^{-j}}}`, truncation depths `r_j = 2n + 2b(j+1)`,
+  upper weights on `{|D ∩ B_j| ≤ r_j ∀j}`, lower weights adding the disjoint one-overflow facets;
+  Rankin bound `2^m E_m ≤ ∏(1+2g) ≤ V^{-2}`; η(s) = 8K³e^{-(log 2/4)s}. `erdos_971` now depends only
+  on propext, Classical.choice, Quot.sound.

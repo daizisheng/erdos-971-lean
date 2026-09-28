@@ -1,16 +1,16 @@
 # erdos-971-lean
 
 Lean 4 formalization of an affirmative answer to
-[Erdős Problem #971](https://www.erdosproblems.com/971), conditional on **one** standard theorem:
+[Erdős Problem #971](https://www.erdosproblems.com/971):
 
 > there are absolute constants c, C > 0 such that for every sufficiently large q,
 > at least C·φ(q) reduced residue classes a mod q have least prime p(a,q) > (1+c)·φ(q)·log q.
 
-**Status: complete modulo the fundamental lemma of sieve theory; unreviewed.**
+**Status: complete, no project axioms, no `sorry`; unreviewed.**
 
 ```
 #print axioms Erdos971.erdos_971
--- [propext, Classical.choice, Quot.sound, Erdos971.fundamental_lemma]
+-- [propext, Classical.choice, Quot.sound]
 ```
 
 The statement `Erdos971Statement` is copied verbatim from
@@ -23,15 +23,16 @@ The statement `Erdos971Statement` is copied verbatim from
 | prime number theorem, `Li y ∼ y / log y` | **proved** — from [PrimeNumberTheoremAnd](https://github.com/AlexKontorovich/PrimeNumberTheoremAnd) (`pi_alt'`, `integral_div_log_asymptotic`) |
 | Mertens' product theorem | **proved** — from PrimeNumberTheoremAnd (`Mertens.prod_one_minus_div_prime_eq`, `Mertens.E₃.abs_le`) |
 | Bombieri–Vinogradov | **proved** — from [kimihiro64/bombieri-vinogradov](https://github.com/kimihiro64/bombieri-vinogradov) (`weighted_to_prime_counting`) |
-| fundamental lemma of sieve theory | **axiom** `fundamental_lemma` in `Erdos971/Axioms.lean` (Iwaniec–Kowalski Cor. 6.10; stated in a weaker form) |
+| fundamental lemma of sieve theory | **proved** in `Erdos971/FL/` — a logarithmically blocked Bonferroni (Brun-type) sieve with η(s) = 8K³e^{−(log 2/4)s}; no analytic input |
 
 Everything else — the occupancy inequality, the singular-series averages, the sieve applications,
 the moment bounds and the assembly — is machine-checked. The derivations of the three imported theorems
 into the exact forms used here are in `Erdos971/Bridge.lean`.
 
-**The remaining risk is the axiom statement:** if `fundamental_lemma` were stated more strongly than the
-literature supports, the conclusion would be worthless. It is intended to be implied by the cited textbook
-statement; this still needs a word-for-word check against the source.
+**Trust base:** Lean's kernel, Mathlib, and the external libraries PrimeNumberTheoremAnd and
+kimihiro64/bombieri-vinogradov (with its dependency Robin1984), whose theorems used here were checked with
+`#print axioms` to depend only on the three standard axioms. The problem statement is trusted to be the
+formal-conjectures one.
 
 ## Build
 
@@ -63,7 +64,10 @@ numbers in place of Λ_R.
 | file | content |
 |---|---|
 | `Erdos971/Statement.lean` | the statement, verbatim from formal-conjectures |
-| `Erdos971/Axioms.lean` | basic definitions and the single axiom `fundamental_lemma` |
+| `Erdos971/Axioms.lean` | basic definitions (no axioms any more) |
+| `Erdos971/FL/Bonferroni.lean` | weighted Bonferroni inequalities, Rankin bound, product perturbation |
+| `Erdos971/FL/Blocks.lean` | blocked upper/lower sieve weights, coefficient bounds, factorisation identities |
+| `Erdos971/FL/Instance.lean` | the fundamental lemma for the primes below `z` (formerly the axiom) |
 | `Erdos971/Bridge.lean` | PNT, `Li` asymptotics, Mertens, Bombieri–Vinogradov in the forms used here (proved from dependencies) |
 | `Erdos971/Defs.lean` | objects of the proof |
 | `Erdos971/Occupancy.lean` | Lemma 1: finite occupancy inequality (no axioms) |
