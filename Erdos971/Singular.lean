@@ -636,4 +636,61 @@ theorem lemma2_finite : ∃ δ : ℕ → ℝ, Tendsto δ atTop (𝓝 0) ∧
     field_simp
     ring
 
+lemma count_dvd_le (K d : ℕ) :
+    (∑ h ∈ Ico 1 K, if d ∣ h then (1 : ℝ) else 0) ≤ (K : ℝ) / d := by
+  rw [sum_boole]
+  have hsub : (Ico 1 K).filter (fun h => d ∣ h) ⊆ (Ioc 0 K).filter (fun h => d ∣ h) := by
+    intro h hh
+    simp only [mem_filter, mem_Ico, mem_Ioc] at hh ⊢
+    exact ⟨⟨by omega, by omega⟩, hh.2⟩
+  have hc := card_le_card hsub
+  rw [Nat.Ioc_filter_dvd_card_eq_div] at hc
+  calc (((Ico 1 K).filter (fun h => d ∣ h)).card : ℝ) ≤ ((K / d : ℕ) : ℝ) := by
+        exact_mod_cast hc
+    _ ≤ (K : ℝ) / d := Nat.cast_div_le
+
+/-- Upper bound for the first moment of `S2` (with constant `1`). -/
+theorem sum_S2_le : ∃ C : ℝ, ∀ (q : ℕ) (z : ℝ) (K : ℕ), 1 ≤ q →
+    ∑ h ∈ Ico 1 K, S2 z (h * q) ≤ C * Qz q z * K := by
+  refine ⟨1, fun q z K _ => ?_⟩
+  set A := (primesLT z).filter (fun p => ¬ p ∣ q) with hAdef
+  have hA : ∀ p ∈ A, p.Prime := fun p hp => prime_of_mem_primesLT (mem_filter.1 hp).1
+  have hQ := Qz_nonneg q z
+  have hsum : ∑ h ∈ Ico 1 K, S2 z (h * q) =
+      Qz q z * ∑ r ∈ A.powerset, (∏ p ∈ r, vf p) * (∏ p ∈ A \ r, wf p) *
+        ∑ h ∈ Ico 1 K, (if (∏ p ∈ r, p) ∣ h then (1 : ℝ) else 0) := by
+    have e : ∀ h ∈ Ico 1 K, S2 z (h * q) = Qz q z * ∑ r ∈ A.powerset,
+        (∏ p ∈ r, vf p) * (∏ p ∈ A \ r, wf p) *
+          (if (∏ p ∈ r, p) ∣ h then (1 : ℝ) else 0) := by
+      intro h _
+      rw [S2_expand]
+      congr 1
+      refine sum_congr rfl fun r _ => ?_
+      split_ifs <;> ring
+    rw [sum_congr rfl e, ← mul_sum, sum_comm]
+    congr 1
+    refine sum_congr rfl fun r _ => ?_
+    rw [mul_sum]
+  rw [hsum, one_mul]
+  apply mul_le_mul_of_nonneg_left _ hQ
+  calc ∑ r ∈ A.powerset, (∏ p ∈ r, vf p) * (∏ p ∈ A \ r, wf p) *
+        ∑ h ∈ Ico 1 K, (if (∏ p ∈ r, p) ∣ h then (1 : ℝ) else 0)
+      ≤ ∑ r ∈ A.powerset, (∏ p ∈ r, vf p) * (∏ p ∈ A \ r, wf p) *
+          ((K : ℝ) / ((∏ p ∈ r, p : ℕ) : ℝ)) := by
+        apply sum_le_sum
+        intro r hr
+        have hr' : ∀ p ∈ r, p.Prime := fun p hp => hA p (mem_powerset.1 hr hp)
+        have hVW : 0 ≤ (∏ p ∈ r, vf p) * (∏ p ∈ A \ r, wf p) :=
+          mul_nonneg (prod_nonneg fun p hp => vf_nonneg (hr' p hp))
+            (prod_nonneg fun p hp => wf_nonneg (hA p (mem_sdiff.1 hp).1))
+        exact mul_le_mul_of_nonneg_left (count_dvd_le K _) hVW
+    _ = (K : ℝ) * ∑ r ∈ A.powerset, (∏ p ∈ r, (vf p / p)) * ∏ p ∈ A \ r, wf p := by
+        rw [mul_sum]
+        refine sum_congr rfl fun r hr => ?_
+        rw [prod_div_distrib, Nat.cast_prod]
+        ring
+    _ = (K : ℝ) * ∏ p ∈ A, (vf p / p + wf p) := by rw [prod_add]
+    _ = K := by
+        rw [prod_congr rfl (fun p hp => vf_div_add_wf (hA p hp)), prod_const_one, mul_one]
+
 end Erdos971

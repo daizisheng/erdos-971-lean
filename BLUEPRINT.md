@@ -1,7 +1,7 @@
 # Blueprint
 
-Conditional proof of Erdős #971 (`Erdos971Statement` in `Erdos971/Statement.lean`) from the four axioms in
-`Erdos971/Axioms.lean`. The argument follows the reviewed proof (`attack/971/01_structure.md` in the campaign
+Conditional proof of Erdős #971 (`Erdos971Statement` in `Erdos971/Statement.lean`) from the single axiom `fundamental_lemma` in
+`Erdos971/Axioms.lean` (PNT, Mertens and Bombieri–Vinogradov are proved in `Bridge.lean` from PrimeNumberTheoremAnd and kimihiro64/bombieri-vinogradov). The argument follows the reviewed proof (`attack/971/01_structure.md` in the campaign
 repo), re-organised for formalization: **all singular series are finite products over primes `p < z`**
 (no infinite products or limits), and every `o(1)` is an explicit `Tendsto … atTop` in `q` with `u` fixed.
 
@@ -81,3 +81,11 @@ products); `η₁, η₃` from the axiom; level `z^{u/4} = x^{1/4}`.
 L1 with `α = 1/2`, `B = B(u)` ⇒ `#{a : N_a = 0} ≥ (1/(4B) − o(1)) φ`; subtract `π(z)` classes (S3) ⇒ no prime `≤ x`;
 subtract `π((1+c)x) − π(x)` (S7) with `c = 1/(32B)` ⇒ no prime `≤ (1+c)x` in `≥ φ/(16B)` classes; Dirichlet
 (`Nat.forall_exists_prime_gt_and_eq_mod`) ⇒ `leastCongruentPrime a q > (1+c) φ(q) log q`.
+
+## Changes in v0.2 (Lean 4.33.1)
+
+- `bombieri_vinogradov` (Li main term, variable heights) replaced by the proved `bv_pi`
+  (fixed height `y ≤ x`, main term `π(y)/φ(r)`), derived from kimihiro64/bombieri-vinogradov.
+- The prime–rough main terms in `sieve_dim1` are now `π(x−hq) − π(z) + π(x) − π(hq)`; `Moments`
+  converts them with `pi_Li_close` (PNT + `li_asymp`), paying an error controlled by the new
+  `sum_S2_le : Σ_{h<K} S2 z (hq) ≤ Qz · K`.

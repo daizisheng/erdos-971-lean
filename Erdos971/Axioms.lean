@@ -1,21 +1,17 @@
 import Mathlib
 
 /-!
-# Erdős #971 — the analytic inputs, stated as axioms
+# Erdős #971 — the only unproved input
 
-This file contains the **only** unproved statements of the project. Each is a standard theorem
-of analytic number theory, stated in a form that is *weaker than or equal to* the textbook form
-(so that the textbook theorem implies the axiom as written). Nothing else in the project uses
-`axiom` or `sorry`; `#print axioms Erdos971.erdos_971` must list exactly the four axioms below
-together with Lean's standard `propext`, `Classical.choice`, `Quot.sound`.
+This file contains the **only** axiom of the project, the fundamental lemma of sieve theory, stated in a
+form that is *weaker than* the textbook statement (Iwaniec–Kowalski, *Analytic Number Theory*, Cor. 6.10;
+Friedlander–Iwaniec, *Opera de Cribro*, §6.5; Halberstam–Richert, *Sieve Methods*), so that the textbook
+theorem implies the axiom as written. `#print axioms Erdos971.erdos_971` lists exactly this axiom together
+with Lean's standard `propext`, `Classical.choice`, `Quot.sound`.
 
-| axiom | literature |
-|---|---|
-| `pnt` | Hadamard (1896), de la Vallée Poussin (1896) |
-| `mertens_product` | Mertens (1874); e.g. Hardy–Wright Thm 429, or Montgomery–Vaughan Thm 2.7 |
-| `bombieri_vinogradov` | Bombieri (1965), A. I. Vinogradov (1965); Iwaniec–Kowalski Thm 17.1, Davenport ch. 28 |
-| `fundamental_lemma` | Iwaniec–Kowalski Thm 6.9 / Cor 6.10; Friedlander–Iwaniec, *Opera de Cribro*, §6.5;
-  Halberstam–Richert Thm 2.5 / 7.? |
+The prime number theorem, Mertens' product theorem and the Bombieri–Vinogradov theorem are **proved**:
+they are imported from PrimeNumberTheoremAnd and kimihiro64/bombieri-vinogradov in `Bridge.lean`.
+The file also holds the basic definitions (`primesLT`, `Pz`, `V`, `piAP`, `Li`).
 -/
 
 open Real Finset Filter Topology
@@ -38,25 +34,6 @@ noncomputable def piAP (y : ℝ) (r b : ℕ) : ℕ :=
 
 /-- The logarithmic integral `Li(y) = ∫_2^y dt / log t`. -/
 noncomputable def Li (y : ℝ) : ℝ := ∫ t in (2 : ℝ)..y, 1 / Real.log t
-
-/-- **Prime number theorem**: `π(x) log x / x → 1`. -/
-axiom pnt :
-  Tendsto (fun x : ℝ => (Nat.primeCounting ⌊x⌋₊ : ℝ) * Real.log x / x) atTop (𝓝 1)
-
-/-- **Mertens' product theorem**, in the weak two-sided form `V(z) ≍ 1 / log z`
-(Mertens proved the asymptotic `V(z) ∼ e^{-γ} / log z`). -/
-axiom mertens_product :
-  ∃ c C : ℝ, 0 < c ∧ ∀ z : ℝ, 2 ≤ z → c / Real.log z ≤ V z ∧ V z ≤ C / Real.log z
-
-/-- **Bombieri–Vinogradov**, weak form: moduli only up to `x^{1/4}` (the theorem allows
-`x^{1/2} (log x)^{-B}`), maximum over reduced residues `b r` and over `2 ≤ y r ≤ x`
-(encoded by letting the residue and the height be arbitrary functions of the modulus). -/
-axiom bombieri_vinogradov (A : ℝ) (hA : 0 < A) :
-  ∃ C : ℝ, ∀ x : ℝ, 2 ≤ x → ∀ (b : ℕ → ℕ) (y : ℕ → ℝ),
-    (∀ r, Nat.Coprime (b r) r) → (∀ r, 2 ≤ y r ∧ y r ≤ x) →
-    ∑ r ∈ Finset.Icc 1 ⌊x ^ ((1 : ℝ) / 4)⌋₊,
-        |(piAP (y r) r (b r) : ℝ) - Li (y r) / (r.totient : ℝ)|
-      ≤ C * x / (Real.log x) ^ A
 
 /-- **Fundamental lemma of sieve theory** (upper and lower bound), in consequence form.
 

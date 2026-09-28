@@ -1,4 +1,4 @@
-import Erdos971.Axioms
+import Erdos971.Bridge
 
 /-!
 # Erdős #971 — objects of the proof (see `BLUEPRINT.md` §0)

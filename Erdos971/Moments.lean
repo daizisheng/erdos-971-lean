@@ -322,39 +322,75 @@ lemma X_lower (q u h : ℕ) (hq0 : 0 < q) (hz2 : 2 ≤ zq q u) (hzq : zq q u < q
     nlinarith
   linarith
 
-/-- The main term of the prime–rough correlation, as `A φ ρ`. -/
-lemma main_term_lower (q u : ℕ) (e : ℝ) (δ : ℕ → ℝ)
-    (hL2 : (1 - δ (Kq q)) * Qz q (zq q u) * (Kq q : ℝ) ^ 2 / 2
-      ≤ ∑ h ∈ Ico 1 (Kq q), ((Kq q : ℝ) - h) * S2 (zq q u) (h * q))
-    (hq0 : 0 < q) (hz2 : 2 ≤ zq q u) (hzq : zq q u < q) (hlx : 0 < Real.log (xq q))
-    (hx0 : 0 < xq q) (he : 0 ≤ 1 - e) :
-    (1 - e) * (Aq q u * q.totient) * ((1 - zq q u / (2 * q)) * (1 - δ (Kq q))
-      * (Qz q (zq q u) * q.totient / q) * ((q : ℝ) * Kq q / xq q) ^ 2
-      * (Real.log q / Real.log (xq q)))
-    ≤ (1 - e) * V (zq q u) * ∑ h ∈ Ico 1 (Kq q), S2 (zq q u) (h * q) *
-        ((Li (xq q - h * q) - Li (zq q u)) + (Li (xq q) - Li (h * q))) := by
-  set x := xq q with hx
+/-- `|π(y) - Li y| ≤ ε y / log y` for large `y` (PNT + `Li y ∼ y/log y`). -/
+lemma pi_Li_close (ε : ℝ) (hε : 0 < ε) :
+    ∃ Y : ℝ, 2 ≤ Y ∧ ∀ y : ℝ, Y ≤ y →
+      |(Nat.primeCounting ⌊y⌋₊ : ℝ) - Li y| ≤ ε * (y / Real.log y) := by
+  have h := pnt.sub li_asymp
+  simp only [sub_self] at h
+  have hev := (h.eventually (Metric.ball_mem_nhds 0 hε)).and (eventually_ge_atTop (2 : ℝ))
+  obtain ⟨Y, hY⟩ := eventually_atTop.1 hev
+  refine ⟨max Y 2, le_max_right _ _, fun y hy => ?_⟩
+  obtain ⟨hb, hy2⟩ := hY y (le_trans (le_max_left _ _) hy)
+  simp only [Metric.mem_ball, dist_zero_right, Real.norm_eq_abs] at hb
+  have hy0 : 0 < y := by linarith
+  have hl : 0 < Real.log y := Real.log_pos (by linarith)
+  have e : (Nat.primeCounting ⌊y⌋₊ : ℝ) - Li y
+      = ((Nat.primeCounting ⌊y⌋₊ : ℝ) * Real.log y / y - Li y * Real.log y / y) * (y / Real.log y) := by
+    field_simp
+  rw [e, abs_mul, abs_of_pos (div_pos hy0 hl)]
+  exact mul_le_mul_of_nonneg_right hb.le (div_pos hy0 hl).le
+
+/-- Pointwise lower bound for the prime-counting main terms. -/
+lemma X_lower_pi (q u h : ℕ) (hq0 : 0 < q) (hz2 : 2 ≤ zq q u) (hzq : zq q u < q)
+    (hlx : 0 < Real.log (xq q)) (hh : h ∈ Ico 1 (Kq q)) (ε Y : ℝ)
+    (hY : ∀ y : ℝ, Y ≤ y → |(Nat.primeCounting ⌊y⌋₊ : ℝ) - Li y| ≤ ε * (y / Real.log y))
+    (hzY : Y ≤ zq q u) (hε : 0 ≤ ε) :
+    ((Kq q : ℝ) - h) * ((2 * q - zq q u) / Real.log (xq q)) - 4 * ε * (xq q / Real.log (zq q u))
+      ≤ ((Nat.primeCounting ⌊xq q - h * q⌋₊ : ℝ) - Nat.primeCounting ⌊zq q u⌋₊)
+        + ((Nat.primeCounting ⌊xq q⌋₊ : ℝ) - Nat.primeCounting (h * q)) := by
+  have hL := X_lower q u h hq0 hz2 hzq hlx hh
+  set x := xq q
   set z := zq q u
-  set K := Kq q
+  have hqr : (0 : ℝ) < q := by exact_mod_cast hq0
+  have h1 : (1 : ℝ) ≤ h := by exact_mod_cast (mem_Ico.1 hh).1
+  have hhK : (h : ℝ) + 1 ≤ Kq q := by exact_mod_cast (mem_Ico.1 hh).2
+  have hqK : (q : ℝ) * Kq q ≤ x := q_mul_Kq_le q hq0
+  have hxh2 : (q : ℝ) ≤ x - h * q := by nlinarith
+  have hhq : (q : ℝ) ≤ h * q := by nlinarith
+  have hhqx : (h : ℝ) * q ≤ x := by nlinarith
+  have hlz : 0 < Real.log z := Real.log_pos (by linarith)
+  have bnd : ∀ y : ℝ, z ≤ y → y ≤ x →
+      |(Nat.primeCounting ⌊y⌋₊ : ℝ) - Li y| ≤ ε * (x / Real.log z) := by
+    intro y hzy hyx
+    refine (hY y (le_trans hzY hzy)).trans (mul_le_mul_of_nonneg_left ?_ hε)
+    have hly : Real.log z ≤ Real.log y := Real.log_le_log (by linarith) hzy
+    exact div_le_div₀ (by linarith) hyx hlz hly
+  have b1 := bnd (x - h * q) (by linarith) (by linarith)
+  have b2 := bnd z le_rfl (by linarith)
+  have b3 := bnd x (by linarith) le_rfl
+  have b4 := bnd (h * q) (by linarith) hhqx
+  have hfl : (Nat.primeCounting (h * q) : ℝ) = Nat.primeCounting ⌊(h : ℝ) * q⌋₊ := by
+    rw [show (h : ℝ) * q = ((h * q : ℕ) : ℝ) by push_cast; ring, Nat.floor_natCast]
+  rw [hfl]
+  have a1 := neg_abs_le ((Nat.primeCounting ⌊x - h * q⌋₊ : ℝ) - Li (x - h * q))
+  have a2 := le_abs_self ((Nat.primeCounting ⌊z⌋₊ : ℝ) - Li z)
+  have a3 := neg_abs_le ((Nat.primeCounting ⌊x⌋₊ : ℝ) - Li x)
+  have a4 := le_abs_self ((Nat.primeCounting ⌊(h : ℝ) * q⌋₊ : ℝ) - Li (h * q))
+  linarith
+
+/-- The main-term identity `V · (2q−z)/log x · (1−δ) Qz K²/2 = A φ ρ`. -/
+lemma main_identity (q u : ℕ) (d : ℝ) (hq0 : 0 < q) (hx0 : 0 < xq q) :
+    V (zq q u) * ((2 * q - zq q u) / Real.log (xq q) * (d * Qz q (zq q u) * (Kq q : ℝ) ^ 2 / 2))
+      = Aq q u * q.totient * ((1 - zq q u / (2 * q)) * d
+        * (Qz q (zq q u) * q.totient / q) * ((q : ℝ) * Kq q / xq q) ^ 2
+        * (Real.log q / Real.log (xq q))) := by
   have hqr : (0 : ℝ) < q := by exact_mod_cast hq0
   have hφ : (0 : ℝ) < q.totient := by exact_mod_cast Nat.totient_pos.2 hq0
-  have hsumX : ((2 * q - z) / Real.log x) * ∑ h ∈ Ico 1 K, ((K : ℝ) - h) * S2 z (h * q)
-      ≤ ∑ h ∈ Ico 1 K, S2 z (h * q) * ((Li (x - h * q) - Li z) + (Li x - Li (h * q))) := by
-    rw [mul_sum]
-    apply sum_le_sum
-    intro h hh
-    have := mul_le_mul_of_nonneg_left (X_lower q u h hq0 hz2 hzq hlx hh) (S2_nonneg z (h * q))
-    linarith [show (2 * q - z) / Real.log x * (((K : ℝ) - h) * S2 z (h * q))
-      = S2 z (h * q) * (((K : ℝ) - h) * ((2 * q - z) / Real.log x)) by ring]
-  have hc0 : 0 ≤ (2 * q - z) / Real.log x := div_nonneg (by linarith) hlx.le
-  have hmain := mul_le_mul_of_nonneg_left ((mul_le_mul_of_nonneg_left hL2 hc0).trans hsumX)
-    (mul_nonneg he (V_nonneg z))
-  refine le_trans (le_of_eq ?_) hmain
-  have hlq : Real.log q = x / q.totient := by rw [hx]; unfold xq; field_simp
+  have hlq : Real.log q = xq q / q.totient := by unfold xq; field_simp
   unfold Aq
   rw [hlq]
   field_simp
-  ring
 
 /-- Final linear arithmetic of M3. -/
 lemma mixed_final (SNW SW SN SM MT P φ e ε E1 E2 E3 : ℝ)
@@ -365,12 +401,13 @@ lemma mixed_final (SNW SW SN SM MT P φ e ε E1 E2 E3 : ℝ)
     1 / 2 * φ ≤ SNW - SW := by
   nlinarith
 
-set_option maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
 theorem mixed_moment : ∃ u₀ : ℕ, ∀ u : ℕ, u₀ ≤ u →
     ∀ᶠ q : ℕ in atTop, (1 : ℝ) / 2 ≤ avg q (fun a => ((Nc q u a : ℝ) - 1) * Wc q u a) := by
   obtain ⟨η, hη, u₁, hdim1⟩ := sieve_dim1
   obtain ⟨δ, hδ, hL2⟩ := lemma2_finite
   obtain ⟨CM, hCM, hA⟩ := Aq_le
+  obtain ⟨C₂, hC₂⟩ := sum_S2_le
   obtain ⟨u₃, hu₃⟩ := eta_small η hη (min (1 / 2) (1 / (16 * CM))) (by positivity)
   refine ⟨max (max u₁ u₃) 4, fun u hu => ?_⟩
   have hu1 : u₁ ≤ u := by omega
@@ -384,6 +421,11 @@ theorem mixed_moment : ∃ u₀ : ℕ, ∀ u : ℕ, u₀ ≤ u →
   set ε1 : ℝ := 1 / (24 * CM * u) with hε1
   have hε1p : 0 < ε1 := by positivity
   have hη0 : 0 ≤ 1 - e := by linarith [le_abs_self e]
+  set C₂' := max C₂ 0 with hC₂'
+  have hC₂'0 : 0 ≤ C₂' := le_max_right _ _
+  set ε : ℝ := ε1 / (16 * (C₂' + 1) * u) with hεdef
+  have hεp : 0 < ε := by positivity
+  obtain ⟨Y, hY2, hY⟩ := pi_Li_close ε hεp
   -- ρ → 1
   have hKn : Tendsto (fun q : ℕ => Kq q) atTop atTop := tendsto_natCast_atTop_iff.1 Kq_tendsto
   have hf1 : Tendsto (fun q : ℕ => 1 - zq q u / (2 * q)) atTop (𝓝 1) := by
@@ -413,10 +455,11 @@ theorem mixed_moment : ∃ u₀ : ℕ, ∀ u : ℕ, u₀ ≤ u →
       * (Qz q (zq q u) * q.totient / q) * ((q : ℝ) * Kq q / xq q) ^ 2
       * (Real.log q / Real.log (xq q))) atTop (𝓝 1) := by
     simpa using (((hf1.mul hf2).mul (Qz_ratio u (by omega))).mul (hf4.pow 2)).mul log_ratio
-  have hρ := hρlim.eventually_const_lt (show 1 - ε1 < 1 by linarith)
+  have hρ := hρlim.eventually_const_lt (show 1 - ε1 / 2 < 1 by linarith)
   have hEN := (avgN_tendsto u (by omega)).eventually_const_lt (show (15 : ℝ) / 16 < 1 by norm_num)
-  have hz2 := (zq_tendsto u (by omega)).eventually_ge_atTop 2
+  have hz2 := (zq_tendsto u (by omega)).eventually_ge_atTop (max 2 Y)
   have hzq := (zq_div_q_tendsto u (by omega)).eventually_lt_const (show (0 : ℝ) < 1 / 2 by norm_num)
+  have hQz2 := (Qz_ratio u (by omega)).eventually_lt_const (show (1 : ℝ) < 2 by norm_num)
   have hlogx : ∀ᶠ q : ℕ in atTop, (32 : ℝ) ≤ Real.log (xq q) :=
     (Real.tendsto_log_atTop.comp xq_tendsto).eventually_ge_atTop 32
   have herr1 : ∀ᶠ q : ℕ in atTop,
@@ -439,20 +482,111 @@ theorem mixed_moment : ∃ u₀ : ℕ, ∀ u : ℕ, u₀ ≤ u →
     have : 2 * (Kq q : ℝ) * q.primeFactors.card ≤ 4 * Real.log q ^ 2 := by nlinarith
     linarith
   have herr3 := ev_xpow_small (1 / 4) (1 / 32) (by norm_num) (by norm_num) (by norm_num)
-  filter_upwards [(hdim1 u hu1).1, (hdim1 u hu1).2, hρ, hEN, hz2, hzq, hlogx, herr1, herr3,
+  filter_upwards [(hdim1 u hu1).1, (hdim1 u hu1).2, hρ, hEN, hz2, hzq, hQz2, hlogx, herr1, herr3,
     hA u (by omega), q_le_xq, eventually_ge_atTop 2]
-    with q hW1 hM hρq hENq hz2q hzqq hlogq herr1q herr3q hAq hqx hq2
+    with q hW1 hM hρq hENq hz2q hzqq hQz2q hlogq herr1q herr3q hAq hqx hq2
   have hq0 : 0 < q := by omega
   have hqr : (0 : ℝ) < q := by exact_mod_cast hq0
   have hφ : (0 : ℝ) < q.totient := by exact_mod_cast Nat.totient_pos.2 hq0
   have hlx : 0 < Real.log (xq q) := by linarith
+  have hx0 : 0 < xq q := by linarith
   have hzq' : zq q u < q := by
     have := hzqq; rw [div_lt_iff₀ hqr] at this; linarith
+  have hz2' : 2 ≤ zq q u := le_trans (le_max_left _ _) hz2q
+  have hzY : Y ≤ zq q u := le_trans (le_max_right _ _) hz2q
   have hA0 : 0 ≤ Aq q u := Aq_nonneg q u
   have hAφ : Aq q u * q.totient = xq q * V (zq q u) := by unfold Aq; field_simp
   have hMC := mixed_count q u hq0 hzq'
-  have hmain := main_term_lower q u e δ (hL2 q (zq q u) (Kq q) hq0) hq0 hz2q hzq' hlx
-    (by linarith) hη0
+  have hV0 : 0 ≤ V (zq q u) := V_nonneg _
+  have hQz0 : 0 ≤ Qz q (zq q u) := by
+    unfold Qz; apply Finset.prod_nonneg; intro p hp
+    simp only [primesLT, mem_filter] at hp
+    have : (1 : ℝ) < p := by exact_mod_cast hp.1.2.1.one_lt
+    exact div_nonneg (by linarith) (by linarith)
+  set x := xq q with hx
+  set z := zq q u with hz
+  set K := Kq q with hK
+  set ρq := (1 - z / (2 * q)) * (1 - δ K) * (Qz q z * q.totient / q) * ((q : ℝ) * K / x) ^ 2
+      * (Real.log q / Real.log x) with hρq_def
+  have hlz : 0 < Real.log z := Real.log_pos (by linarith)
+  have hlzx : Real.log z = Real.log x / u := log_zq hx0
+  -- sum of the π-main terms
+  have hsum : ((2 * q - z) / Real.log x) * ∑ h ∈ Ico 1 K, ((K : ℝ) - h) * S2 z (h * q)
+      - 4 * ε * (x / Real.log z) * ∑ h ∈ Ico 1 K, S2 z (h * q)
+      ≤ ∑ h ∈ Ico 1 K, S2 z (h * q) *
+          (((Nat.primeCounting ⌊x - h * q⌋₊ : ℝ) - Nat.primeCounting ⌊z⌋₊)
+            + ((Nat.primeCounting ⌊x⌋₊ : ℝ) - Nat.primeCounting (h * q))) := by
+    rw [mul_sum, mul_sum, ← sum_sub_distrib]
+    apply sum_le_sum
+    intro h hh
+    have := mul_le_mul_of_nonneg_left
+      (X_lower_pi q u h hq0 hz2' hzq' hlx hh ε Y hY hzY hεp.le) (S2_nonneg z (h * q))
+    nlinarith [this]
+  have hL := hL2 q z K hq0
+  have hc0 : 0 ≤ (2 * q - z) / Real.log x := div_nonneg (by linarith) hlx.le
+  have hS2sum : ∑ h ∈ Ico 1 K, S2 z (h * q) ≤ C₂' * Qz q z * K :=
+    (hC₂ q z K hq0).trans (by
+      apply mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_right (le_max_left _ _) hQz0)
+        (Nat.cast_nonneg _))
+  have hQzK : Qz q z * K ≤ 2 * Real.log x := by
+    have hQ : Qz q z ≤ 2 * q / q.totient := by
+      rw [le_div_iff₀ hφ]; have := hQz2q; rw [div_lt_iff₀ hqr] at this; linarith
+    have hKx : (K : ℝ) ≤ x / q := by rw [le_div_iff₀ hqr]; linarith [q_mul_Kq_le q hq0]
+    have hlq : Real.log q ≤ Real.log x := Real.log_le_log hqr hqx
+    calc Qz q z * K ≤ (2 * q / q.totient) * (x / q) :=
+          mul_le_mul hQ hKx (Nat.cast_nonneg _) (by positivity)
+      _ = 2 * Real.log q := by rw [hx]; unfold xq; field_simp
+      _ ≤ 2 * Real.log x := by linarith
+  -- error term ≤ (1-e) A φ ε1/2
+  have herrM : (1 - e) * V z * (4 * ε * (x / Real.log z) * ∑ h ∈ Ico 1 K, S2 z (h * q))
+      ≤ (1 - e) * (Aq q u * q.totient) * (ε1 / 2) := by
+    have h1 : 4 * ε * (x / Real.log z) * ∑ h ∈ Ico 1 K, S2 z (h * q)
+        ≤ 4 * ε * (x / Real.log z) * (C₂' * (2 * Real.log x)) := by
+      apply mul_le_mul_of_nonneg_left _ (by positivity)
+      calc ∑ h ∈ Ico 1 K, S2 z (h * q) ≤ C₂' * Qz q z * K := hS2sum
+        _ = C₂' * (Qz q z * K) := by ring
+        _ ≤ C₂' * (2 * Real.log x) := mul_le_mul_of_nonneg_left hQzK hC₂'0
+    have h2 : 4 * ε * (x / Real.log z) * (C₂' * (2 * Real.log x)) = 8 * ε * C₂' * u * x := by
+      rw [hlzx]; field_simp; ring
+    have h3 : 8 * ε * C₂' * u ≤ ε1 / 2 := by
+      rw [hεdef]
+      have hu0 : (0 : ℝ) < u := by linarith
+      rw [show 8 * (ε1 / (16 * (C₂' + 1) * u)) * C₂' * u = ε1 / 2 * (C₂' / (C₂' + 1)) by
+        field_simp; ring]
+      have : C₂' / (C₂' + 1) ≤ 1 := by rw [div_le_one (by linarith)]; linarith
+      nlinarith
+    have h4 : V z * (4 * ε * (x / Real.log z) * ∑ h ∈ Ico 1 K, S2 z (h * q))
+        ≤ Aq q u * q.totient * (ε1 / 2) := by
+      calc V z * (4 * ε * (x / Real.log z) * ∑ h ∈ Ico 1 K, S2 z (h * q))
+          ≤ V z * (8 * ε * C₂' * u * x) := by rw [← h2]; exact mul_le_mul_of_nonneg_left h1 hV0
+        _ = (8 * ε * C₂' * u) * (x * V z) := by ring
+        _ ≤ (ε1 / 2) * (x * V z) := mul_le_mul_of_nonneg_right h3 (by positivity)
+        _ = Aq q u * q.totient * (ε1 / 2) := by rw [hAφ]; ring
+    calc (1 - e) * V z * (4 * ε * (x / Real.log z) * ∑ h ∈ Ico 1 K, S2 z (h * q))
+        = (1 - e) * (V z * (4 * ε * (x / Real.log z) * ∑ h ∈ Ico 1 K, S2 z (h * q))) := by ring
+      _ ≤ (1 - e) * (Aq q u * q.totient * (ε1 / 2)) := mul_le_mul_of_nonneg_left h4 hη0
+      _ = _ := by ring
+  have hmainM : (1 - e) * (Aq q u * q.totient) * ρq
+      - (1 - e) * V z * (4 * ε * (x / Real.log z) * ∑ h ∈ Ico 1 K, S2 z (h * q))
+      ≤ (1 - e) * V z * ∑ h ∈ Ico 1 K, S2 z (h * q) *
+          (((Nat.primeCounting ⌊x - h * q⌋₊ : ℝ) - Nat.primeCounting ⌊z⌋₊)
+            + ((Nat.primeCounting ⌊x⌋₊ : ℝ) - Nat.primeCounting (h * q))) := by
+    have hid := main_identity q u (1 - δ K) hq0 hx0
+    have hA1 : (2 * q - z) / Real.log x * ((1 - δ K) * Qz q z * (K : ℝ) ^ 2 / 2)
+        ≤ ((2 * q - z) / Real.log x) * ∑ h ∈ Ico 1 K, ((K : ℝ) - h) * S2 z (h * q) :=
+      mul_le_mul_of_nonneg_left hL hc0
+    have hB := mul_le_mul_of_nonneg_left (hA1.trans (by linarith [hsum] :
+      ((2 * q - z) / Real.log x) * ∑ h ∈ Ico 1 K, ((K : ℝ) - h) * S2 z (h * q)
+        ≤ ∑ h ∈ Ico 1 K, S2 z (h * q) *
+          (((Nat.primeCounting ⌊x - h * q⌋₊ : ℝ) - Nat.primeCounting ⌊z⌋₊)
+            + ((Nat.primeCounting ⌊x⌋₊ : ℝ) - Nat.primeCounting (h * q)))
+          + 4 * ε * (x / Real.log z) * ∑ h ∈ Ico 1 K, S2 z (h * q)))
+      (mul_nonneg hη0 hV0)
+    have : (1 - e) * V z * ((2 * q - z) / Real.log x * ((1 - δ K) * Qz q z * (K : ℝ) ^ 2 / 2))
+        = (1 - e) * (Aq q u * q.totient) * ρq := by
+      rw [mul_assoc, hid, hρq_def]; ring
+    rw [this] at hB
+    linarith
   unfold avg
   rw [le_div_iff₀ hφ]
   have hsplit : ∑ a ∈ reduced q, ((Nc q u a : ℝ) - 1) * Wc q u a
@@ -462,14 +596,14 @@ theorem mixed_moment : ∃ u₀ : ℕ, ∀ u : ℕ, u₀ ≤ u →
   have hENq' : 15 / 16 * (q.totient : ℝ) ≤ ∑ a ∈ reduced q, (Nc q u a : ℝ) := by
     have := hENq; unfold avg at this; rw [lt_div_iff₀ hφ] at this; linarith
   have hW1' : ∑ a ∈ reduced q, (Wc q u a : ℝ)
-      ≤ (1 + e) * (Aq q u * q.totient) + xq q ^ ((1 : ℝ) / 4) := by
-    rw [hAφ]; linarith [show (1 + e) * xq q * V (zq q u) = (1 + e) * (xq q * V (zq q u)) by ring]
-  have herr2 : xq q / Real.log (xq q) ^ 2 ≤ 1 / 32 * q.totient := by
-    have hlqx : Real.log q ≤ Real.log (xq q) := Real.log_le_log hqr hqx
+      ≤ (1 + e) * (Aq q u * q.totient) + x ^ ((1 : ℝ) / 4) := by
+    rw [hAφ]; linarith [show (1 + e) * x * V z = (1 + e) * (x * V z) by ring]
+  have herr2 : x / Real.log x ^ 2 ≤ 1 / 32 * q.totient := by
+    have hlqx : Real.log q ≤ Real.log x := Real.log_le_log hqr hqx
     have hlq0 : 0 ≤ Real.log q := Real.log_natCast_nonneg q
     rw [div_le_iff₀ (by positivity)]
-    have hxe : xq q = q.totient * Real.log q := rfl
-    have h32 : (32 : ℝ) * Real.log q ≤ Real.log (xq q) ^ 2 := by nlinarith
+    have hxe : x = q.totient * Real.log q := rfl
+    have h32 : (32 : ℝ) * Real.log q ≤ Real.log x ^ 2 := by nlinarith
     have := mul_le_mul_of_nonneg_left h32 hφ.le
     nlinarith
   have hP : 0 ≤ Aq q u * q.totient := mul_nonneg hA0 hφ.le
@@ -495,16 +629,22 @@ theorem mixed_moment : ∃ u₀ : ℕ, ∀ u : ℕ, u₀ ≤ u →
     have := mul_le_mul_of_nonneg_right h3 hφ.le
     linarith [show ε1 * (1 - e) * (Aq q u * q.totient) = (1 - e) * (ε1 * Aq q u) * q.totient by ring]
   have k3 : (1 - e) * (Aq q u * q.totient) * (1 - ε1)
-      ≤ (1 - e) * (Aq q u * q.totient) * ((1 - zq q u / (2 * q)) * (1 - δ (Kq q))
-        * (Qz q (zq q u) * q.totient / q) * ((q : ℝ) * Kq q / xq q) ^ 2
-        * (Real.log q / Real.log (xq q))) :=
-    mul_le_mul_of_nonneg_left hρq.le (mul_nonneg hη0 hP)
+      ≤ (1 - e) * V z * ∑ h ∈ Ico 1 K, S2 z (h * q) *
+          (((Nat.primeCounting ⌊x - h * q⌋₊ : ℝ) - Nat.primeCounting ⌊z⌋₊)
+            + ((Nat.primeCounting ⌊x⌋₊ : ℝ) - Nat.primeCounting (h * q))) := by
+    have hρ' : 1 - ε1 / 2 ≤ ρq := hρq.le
+    have := mul_le_mul_of_nonneg_left hρ' (mul_nonneg hη0 hP)
+    have hx' : (1 - e) * (Aq q u * q.totient) * (1 - ε1)
+        = (1 - e) * (Aq q u * q.totient) * (1 - ε1 / 2) - (1 - e) * (Aq q u * q.totient) * (ε1 / 2) := by
+      ring
+    linarith [hmainM, herrM]
   exact mixed_final (∑ a ∈ reduced q, (Nc q u a : ℝ) * Wc q u a) (∑ a ∈ reduced q, (Wc q u a : ℝ))
-    (∑ a ∈ reduced q, (Nc q u a : ℝ)) (∑ h ∈ Ico 1 (Kq q), ((Mplus q u h : ℝ) + Mminus q u h))
-    ((1 - e) * V (zq q u) * ∑ h ∈ Ico 1 (Kq q), S2 (zq q u) (h * q) *
-        ((Li (xq q - h * q) - Li (zq q u)) + (Li (xq q) - Li (h * q))))
-    (Aq q u * q.totient) q.totient e ε1 (2 * (Kq q : ℝ) * q.primeFactors.card)
-    (xq q / Real.log (xq q) ^ 2) (xq q ^ ((1 : ℝ) / 4)) hMC hM hW1' hENq'
-    herr1q herr2 herr3q k1 k2 (k3.trans hmain) hφ.le
+    (∑ a ∈ reduced q, (Nc q u a : ℝ)) (∑ h ∈ Ico 1 K, ((Mplus q u h : ℝ) + Mminus q u h))
+    ((1 - e) * V z * ∑ h ∈ Ico 1 K, S2 z (h * q) *
+          (((Nat.primeCounting ⌊x - h * q⌋₊ : ℝ) - Nat.primeCounting ⌊z⌋₊)
+            + ((Nat.primeCounting ⌊x⌋₊ : ℝ) - Nat.primeCounting (h * q))))
+    (Aq q u * q.totient) q.totient e ε1 (2 * (K : ℝ) * q.primeFactors.card)
+    (x / Real.log x ^ 2) (x ^ ((1 : ℝ) / 4)) hMC hM hW1' hENq'
+    herr1q herr2 herr3q k1 k2 k3 hφ.le
 
 end Erdos971

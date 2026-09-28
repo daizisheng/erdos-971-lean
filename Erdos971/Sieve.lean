@@ -1,7 +1,7 @@
 import Erdos971.Defs
 
 /-!
-# Sieve applications (BLUEPRINT §4). Uses `fundamental_lemma`, `mertens_product`, `bombieri_vinogradov`.
+# Sieve applications (BLUEPRINT §4). Uses `fundamental_lemma`, `mertens_product`, `bv_pi`.
 -/
 
 open Real Finset Filter Topology
@@ -424,7 +424,8 @@ lemma count_periodic (P : ℕ → Prop) [DecidablePred P] (d : ℕ) (hd : 0 < d)
     rw [Finset.range_eq_Ico,
       ← Finset.Ico_union_Ico_eq_Ico (Nat.zero_le (d * (M / d))) (Nat.mul_div_le M d),
       Finset.filter_union, Finset.card_union_of_disjoint
-        (Finset.disjoint_filter_filter (Finset.Ico_disjoint_Ico_consecutive _ _ _))]
+        (Finset.disjoint_filter_filter (Finset.Ico_disjoint_Ico_consecutive _ _ _)),
+      ← Finset.range_eq_Ico]
   have htail : ((Ico (d * (M / d)) M).filter P).card ≤ ((range d).filter P).card := by
     rw [← hIco (d * (M / d))]
     apply Finset.card_le_card
@@ -711,36 +712,6 @@ theorem sieve_triple : ∃ u₀ : ℕ, ∀ u : ℕ, u₀ ≤ u → ∀ᶠ q : �
   nlinarith
 
 
-lemma Li_intervalIntegrable {a b : ℝ} (ha : 2 ≤ a) (hb : 2 ≤ b) :
-    IntervalIntegrable (fun t => 1 / Real.log t) MeasureTheory.volume a b := by
-  apply ContinuousOn.intervalIntegrable
-  apply ContinuousOn.div continuousOn_const
-  · apply Real.continuousOn_log.mono
-    intro t ht
-    have : 2 ≤ t := by
-      rcases Set.mem_uIcc.mp ht with h | h
-      · linarith [h.1]
-      · linarith [h.1]
-    simp only [Set.mem_compl_iff, Set.mem_singleton_iff]; linarith
-  · intro t ht
-    have : 2 ≤ t := by
-      rcases Set.mem_uIcc.mp ht with h | h
-      · linarith [h.1]
-      · linarith [h.1]
-    exact (Real.log_pos (by linarith)).ne'
-
-lemma Li_mono {a b : ℝ} (ha : 2 ≤ a) (hab : a ≤ b) : Li a ≤ Li b := by
-  have hb : 2 ≤ b := ha.trans hab
-  have h := intervalIntegral.integral_interval_sub_left (Li_intervalIntegrable (le_refl 2) hb)
-    (Li_intervalIntegrable (le_refl 2) ha)
-  unfold Li
-  have : 0 ≤ ∫ t in a..b, 1 / Real.log t := by
-    apply intervalIntegral.integral_nonneg hab
-    intro t ht
-    have : 0 < Real.log t := Real.log_pos (by linarith [ht.1])
-    positivity
-  linarith
-
 /-- residue for `p + t`. -/
 def bplus (t r : ℕ) : ℕ := if r ≠ 0 ∧ Nat.Coprime t r then (r - 1) * t else 1
 
@@ -883,7 +854,7 @@ lemma gpair_prod_not_coprime {t d : ℕ} (hd0 : d ≠ 0) (hc : ¬ Nat.Coprime t 
 
 /-- One Bombieri–Vinogradov term. -/
 noncomputable def bvT (y : ℝ) (b : ℕ → ℕ) (r : ℕ) : ℝ :=
-  |(piAP y r (b r) : ℝ) - Li y / (r.totient : ℝ)|
+  |(piAP y r (b r) : ℝ) - (Nat.primeCounting ⌊y⌋₊ : ℝ) / (r.totient : ℝ)|
 
 /-- The Bombieri–Vinogradov sum. -/
 noncomputable def bvS (x y : ℝ) (b : ℕ → ℕ) : ℝ :=
@@ -895,7 +866,7 @@ lemma rem_plus_term {z x : ℝ} (hz : 0 ≤ z) {t d : ℕ} (hd : d ∈ (Pz z).di
     (hzN : ⌊z⌋₊ ≤ ⌊x⌋₊ - t) :
     |((((Icc 1 ⌊x⌋₊).filter (fun p : ℕ => p.Prime ∧ z < (p : ℝ) ∧ p + t ≤ ⌊x⌋₊)).filter
         (fun p => d ∣ p + t)).card : ℝ)
-      - (Li (x - t) - Li z) * ∏ p ∈ d.primeFactors, gpair t p|
+      - ((Nat.primeCounting ⌊x - t⌋₊ : ℝ) - Nat.primeCounting ⌊z⌋₊) * ∏ p ∈ d.primeFactors, gpair t p|
       ≤ bvT (x - t) (bplus t) d + bvT z (bplus t) d := by
   have hd0 : d ≠ 0 := (Nat.pos_of_mem_divisors hd).ne'
   by_cases hc : Nat.Coprime t d
@@ -914,10 +885,11 @@ lemma rem_plus_term {z x : ℝ} (hz : 0 ≤ z) {t d : ℕ} (hd : d ∈ (Pz z).di
     have := abs_sub (((((Icc 1 ⌊x⌋₊).filter (fun p : ℕ => p.Prime ∧ z < (p : ℝ) ∧ p + t ≤ ⌊x⌋₊)).filter
         (fun p => d ∣ p + t)).card : ℝ) +
         (((range (⌊z⌋₊ + 1)).filter (fun p => p.Prime ∧ p ≡ bplus t d [MOD d])).card : ℝ)
-          - Li (x - t) / d.totient)
+          - (Nat.primeCounting ⌊x - t⌋₊ : ℝ) / d.totient)
       ((((range (⌊z⌋₊ + 1)).filter (fun p => p.Prime ∧ p ≡ bplus t d [MOD d])).card : ℝ)
-          - Li z / d.totient)
-    convert this using 2
+          - (Nat.primeCounting ⌊z⌋₊ : ℝ) / d.totient)
+    refine le_trans (le_of_eq ?_) this
+    congr 1
     ring
   · obtain ⟨ℓ, hℓ, hℓt, hℓd, hprod⟩ := gpair_prod_not_coprime hd0 hc
     rw [hprod, mul_zero, sub_zero]
@@ -939,7 +911,7 @@ lemma rem_minus_term {z x : ℝ} {t d : ℕ} (hd : d ∈ (Pz z).divisors) (ht1 :
     (htN : t ≤ ⌊x⌋₊) :
     |((((Icc 1 ⌊x⌋₊).filter (fun p : ℕ => p.Prime ∧ t < p)).filter
         (fun p => d ∣ p - t)).card : ℝ)
-      - (Li x - Li t) * ∏ p ∈ d.primeFactors, gpair t p|
+      - ((Nat.primeCounting ⌊x⌋₊ : ℝ) - Nat.primeCounting t) * ∏ p ∈ d.primeFactors, gpair t p|
       ≤ bvT x (bminus t) d + bvT t (bminus t) d := by
   have hd0 : d ≠ 0 := (Nat.pos_of_mem_divisors hd).ne'
   by_cases hc : Nat.Coprime t d
@@ -953,15 +925,16 @@ lemma rem_minus_term {z x : ℝ} {t d : ℕ} (hd : d ∈ (Pz z).divisors) (ht1 :
       unfold piAP; rw [hb, Nat.floor_natCast]
     rw [gpair_prod_coprime (sqf_of_mem_divisors hd) hc]
     unfold bvT
-    rw [e1, e2, ← hcount]
+    rw [e1, e2, ← hcount, Nat.floor_natCast]
     push_cast
     have := abs_sub (((((Icc 1 ⌊x⌋₊).filter (fun p : ℕ => p.Prime ∧ t < p)).filter
         (fun p => d ∣ p - t)).card : ℝ) +
         (((range (t + 1)).filter (fun p => p.Prime ∧ p ≡ t [MOD d])).card : ℝ)
-          - Li x / d.totient)
+          - (Nat.primeCounting ⌊x⌋₊ : ℝ) / d.totient)
       ((((range (t + 1)).filter (fun p => p.Prime ∧ p ≡ t [MOD d])).card : ℝ)
-          - Li t / d.totient)
-    convert this using 2
+          - (Nat.primeCounting t : ℝ) / d.totient)
+    refine le_trans (le_of_eq ?_) this
+    congr 1
     ring
   · obtain ⟨ℓ, hℓ, hℓt, hℓd, hprod⟩ := gpair_prod_not_coprime hd0 hc
     rw [hprod, mul_zero, sub_zero]
@@ -1005,19 +978,21 @@ lemma Mplus_lower {η : ℝ → ℝ} {s₀ : ℝ}
     (q u h : ℕ) (s : ℝ) (hz : 2 ≤ zq q u) (hs : s₀ ≤ s)
     (hlev : zq q u ^ s = xq q ^ ((1 : ℝ) / 4)) (heven : 2 ∣ h * q)
     (hzt : zq q u ≤ xq q - ((h * q : ℕ) : ℝ)) :
-    (1 - η s) * V (zq q u) * S2 (zq q u) (h * q) * (Li (xq q - ((h * q : ℕ) : ℝ)) - Li (zq q u))
+    (1 - η s) * V (zq q u) * S2 (zq q u) (h * q) *
+      ((Nat.primeCounting ⌊xq q - ((h * q : ℕ) : ℝ)⌋₊ : ℝ) - Nat.primeCounting ⌊zq q u⌋₊)
       - (bvS (xq q) (xq q - ((h * q : ℕ) : ℝ)) (bplus (h * q))
           + bvS (xq q) (zq q u) (bplus (h * q)))
       ≤ Mplus q u h := by
   set t := h * q with ht
   set z := zq q u with hzdef
   set x := xq q with hxdef
-  have hX : 0 ≤ Li (x - t) - Li z := sub_nonneg.mpr (Li_mono hz hzt)
+  have hX : 0 ≤ (Nat.primeCounting ⌊x - t⌋₊ : ℝ) - Nat.primeCounting ⌊z⌋₊ :=
+    sub_nonneg.mpr (Nat.cast_le.mpr (Nat.monotone_primeCounting (Nat.floor_le_floor hzt)))
   have hzN : ⌊z⌋₊ ≤ ⌊x⌋₊ - t := by
     rw [← Nat.floor_sub_natCast]; exact Nat.floor_le_floor hzt
   obtain ⟨-, hlo⟩ := hFL z s hz hs
     ((Icc 1 ⌊x⌋₊).filter (fun p : ℕ => p.Prime ∧ z < (p : ℝ) ∧ p + t ≤ ⌊x⌋₊))
-    (fun p => p + t) (gpair t) (Li (x - t) - Li z) hX
+    (fun p => p + t) (gpair t) ((Nat.primeCounting ⌊x - t⌋₊ : ℝ) - Nat.primeCounting ⌊z⌋₊) hX
     (fun p hp => (gpair_ok heven (mem_primesLT_sv.mp hp).1).1)
     (fun p hp => (gpair_ok heven (mem_primesLT_sv.mp hp).1).2)
   rw [Vg2] at hlo
@@ -1031,7 +1006,7 @@ lemma Mplus_lower {η : ℝ → ℝ} {s₀ : ℝ}
     intro p _
     tauto
   have hR : Rem z (z ^ s) ((Icc 1 ⌊x⌋₊).filter (fun p : ℕ => p.Prime ∧ z < (p : ℝ) ∧ p + t ≤ ⌊x⌋₊))
-      (fun p => p + t) (gpair t) (Li (x - t) - Li z)
+      (fun p => p + t) (gpair t) ((Nat.primeCounting ⌊x - t⌋₊ : ℝ) - Nat.primeCounting ⌊z⌋₊)
       ≤ bvS x (x - t) (bplus t) + bvS x z (bplus t) := by
     unfold bvS
     rw [← Finset.sum_add_distrib]
@@ -1040,8 +1015,8 @@ lemma Mplus_lower {η : ℝ → ℝ} {s₀ : ℝ}
     · intro d hd
       exact rem_plus_term (by linarith) hd hzN
   rw [hM]
-  have e : (Li (x - t) - Li z) * (V z * S2 z t) * (1 - η s)
-      = (1 - η s) * V z * S2 z t * (Li (x - t) - Li z) := by ring
+  have e : ((Nat.primeCounting ⌊x - t⌋₊ : ℝ) - Nat.primeCounting ⌊z⌋₊) * (V z * S2 z t) * (1 - η s)
+      = (1 - η s) * V z * S2 z t * ((Nat.primeCounting ⌊x - t⌋₊ : ℝ) - Nat.primeCounting ⌊z⌋₊) := by ring
   linarith
 
 lemma Mminus_lower {η : ℝ → ℝ} {s₀ : ℝ}
@@ -1056,20 +1031,22 @@ lemma Mminus_lower {η : ℝ → ℝ} {s₀ : ℝ}
     (q u h : ℕ) (s : ℝ) (hz : 2 ≤ zq q u) (hs : s₀ ≤ s)
     (hlev : zq q u ^ s = xq q ^ ((1 : ℝ) / 4)) (heven : 2 ∣ h * q)
     (ht2 : (2 : ℝ) ≤ ((h * q : ℕ) : ℝ)) (htx : ((h * q : ℕ) : ℝ) ≤ xq q) :
-    (1 - η s) * V (zq q u) * S2 (zq q u) (h * q) * (Li (xq q) - Li ((h * q : ℕ) : ℝ))
+    (1 - η s) * V (zq q u) * S2 (zq q u) (h * q) *
+      ((Nat.primeCounting ⌊xq q⌋₊ : ℝ) - Nat.primeCounting (h * q))
       - (bvS (xq q) (xq q) (bminus (h * q)) + bvS (xq q) ((h * q : ℕ) : ℝ) (bminus (h * q)))
       ≤ Mminus q u h := by
   set t := h * q with ht
   set z := zq q u with hzdef
   set x := xq q with hxdef
-  have hX : 0 ≤ Li x - Li t := sub_nonneg.mpr (Li_mono ht2 htx)
   have htN : t ≤ ⌊x⌋₊ := Nat.le_floor htx
+  have hX : 0 ≤ (Nat.primeCounting ⌊x⌋₊ : ℝ) - Nat.primeCounting t :=
+    sub_nonneg.mpr (Nat.cast_le.mpr (Nat.monotone_primeCounting htN))
   have ht1 : 1 ≤ t := by
     have : (1 : ℝ) ≤ t := by linarith
     exact_mod_cast this
   obtain ⟨-, hlo⟩ := hFL z s hz hs
     ((Icc 1 ⌊x⌋₊).filter (fun p : ℕ => p.Prime ∧ t < p))
-    (fun p => p - t) (gpair t) (Li x - Li t) hX
+    (fun p => p - t) (gpair t) ((Nat.primeCounting ⌊x⌋₊ : ℝ) - Nat.primeCounting t) hX
     (fun p hp => (gpair_ok heven (mem_primesLT_sv.mp hp).1).1)
     (fun p hp => (gpair_ok heven (mem_primesLT_sv.mp hp).1).2)
   rw [Vg2] at hlo
@@ -1082,7 +1059,7 @@ lemma Mminus_lower {η : ℝ → ℝ} {s₀ : ℝ}
     intro p _
     tauto
   have hR : Rem z (z ^ s) ((Icc 1 ⌊x⌋₊).filter (fun p : ℕ => p.Prime ∧ t < p))
-      (fun p => p - t) (gpair t) (Li x - Li t)
+      (fun p => p - t) (gpair t) ((Nat.primeCounting ⌊x⌋₊ : ℝ) - Nat.primeCounting t)
       ≤ bvS x x (bminus t) + bvS x t (bminus t) := by
     unfold bvS
     rw [← Finset.sum_add_distrib]
@@ -1091,8 +1068,8 @@ lemma Mminus_lower {η : ℝ → ℝ} {s₀ : ℝ}
     · intro d hd
       exact rem_minus_term hd ht1 htN
   rw [hM]
-  have e : (Li x - Li t) * (V z * S2 z t) * (1 - η s)
-      = (1 - η s) * V z * S2 z t * (Li x - Li t) := by ring
+  have e : ((Nat.primeCounting ⌊x⌋₊ : ℝ) - Nat.primeCounting t) * (V z * S2 z t) * (1 - η s)
+      = (1 - η s) * V z * S2 z t * ((Nat.primeCounting ⌊x⌋₊ : ℝ) - Nat.primeCounting t) := by ring
   linarith
 
 
@@ -1150,16 +1127,17 @@ lemma per_h {η : ℝ → ℝ} {s₀ C : ℝ}
           ≤ X * (∏ p ∈ primesLT z, (1 - g p)) * (1 + η s) + Rem z (z ^ s) A f g X ∧
         X * (∏ p ∈ primesLT z, (1 - g p)) * (1 - η s) - Rem z (z ^ s) A f g X
           ≤ ((A.filter (fun i => Nat.Coprime (f i) (Pz z))).card : ℝ))
-    (hC : ∀ x : ℝ, 2 ≤ x → ∀ (b : ℕ → ℕ) (y : ℕ → ℝ),
-      (∀ r, Nat.Coprime (b r) r) → (∀ r, 2 ≤ y r ∧ y r ≤ x) →
+    (hC : ∀ x : ℝ, 2 ≤ x → ∀ y : ℝ, 2 ≤ y → y ≤ x → ∀ b : ℕ → ℕ,
+      (∀ r, Nat.Coprime (b r) r) →
       ∑ r ∈ Finset.Icc 1 ⌊x ^ ((1 : ℝ) / 4)⌋₊,
-          |(piAP (y r) r (b r) : ℝ) - Li (y r) / (r.totient : ℝ)|
+          |(piAP y r (b r) : ℝ) - (Nat.primeCounting ⌊y⌋₊ : ℝ) / (r.totient : ℝ)|
         ≤ C * x / (Real.log x) ^ (4 : ℝ))
     (q u h : ℕ) (s : ℝ) (hz3 : 3 ≤ zq q u) (hs : s₀ ≤ s)
     (hlev : zq q u ^ s = xq q ^ ((1 : ℝ) / 4)) (hh1 : 1 ≤ h)
     (hhx : ((h : ℝ) + 1) * q ≤ xq q) (hzq : zq q u ≤ q) :
     (1 - η s) * V (zq q u) * (S2 (zq q u) (h * q) *
-        ((Li (xq q - h * q) - Li (zq q u)) + (Li (xq q) - Li (h * q))))
+        (((Nat.primeCounting ⌊xq q - h * q⌋₊ : ℝ) - Nat.primeCounting ⌊zq q u⌋₊)
+              + ((Nat.primeCounting ⌊xq q⌋₊ : ℝ) - Nat.primeCounting (h * q))))
       - 4 * (C * xq q / Real.log (xq q) ^ 4)
       ≤ (Mplus q u h : ℝ) + Mminus q u h := by
   set z := zq q u
@@ -1173,7 +1151,7 @@ lemma per_h {η : ℝ → ℝ} {s₀ C : ℝ}
   have bv : ∀ y : ℝ, 2 ≤ y → y ≤ x → ∀ b : ℕ → ℕ, (∀ r, Nat.Coprime (b r) r) →
       bvS x y b ≤ C * x / Real.log x ^ 4 := by
     intro y hy hyx b hb
-    have := hC x hx2 b (fun _ => y) hb (fun _ => ⟨hy, hyx⟩)
+    have := hC x hx2 y hy hyx b hb
     rw [show (4 : ℝ) = ((4 : ℕ) : ℝ) by norm_num, Real.rpow_natCast] at this
     exact this
   have b1 := bv (x - h * q) (by linarith) (by linarith) (bplus (h * q)) (bplus_coprime _)
@@ -1191,9 +1169,11 @@ lemma per_h {η : ℝ → ℝ} {s₀ C : ℝ}
     have hm := Mminus_lower hFL q u h s (by linarith) hs hlev heven (by rw [htc]; exact ht2)
       (by rw [htc]; exact htx)
     rw [htc] at hp hm
-    have e : (1 - η s) * V z * (S2 z (h * q) * ((Li (x - h * q) - Li z) + (Li x - Li (h * q))))
-        = (1 - η s) * V z * S2 z (h * q) * (Li (x - h * q) - Li z)
-          + (1 - η s) * V z * S2 z (h * q) * (Li x - Li (h * q)) := by ring
+    have e : (1 - η s) * V z * (S2 z (h * q) *
+          (((Nat.primeCounting ⌊x - h * q⌋₊ : ℝ) - Nat.primeCounting ⌊z⌋₊)
+            + ((Nat.primeCounting ⌊x⌋₊ : ℝ) - Nat.primeCounting (h * q))))
+        = (1 - η s) * V z * S2 z (h * q) * ((Nat.primeCounting ⌊x - h * q⌋₊ : ℝ) - Nat.primeCounting ⌊z⌋₊)
+          + (1 - η s) * V z * S2 z (h * q) * ((Nat.primeCounting ⌊x⌋₊ : ℝ) - Nat.primeCounting (h * q)) := by ring
     rw [e]
     linarith
   · rw [S2_odd (by linarith) heven]
@@ -1208,11 +1188,12 @@ theorem sieve_dim1 : ∃ η : ℝ → ℝ, Tendsto (fun s => s * η s) atTop (�
           ≤ (1 + η (u / 4)) * xq q * V (zq q u) + xq q ^ ((1 : ℝ) / 4)) ∧
       (∀ᶠ q : ℕ in atTop,
         (1 - η (u / 4)) * V (zq q u) * ∑ h ∈ Ico 1 (Kq q), S2 (zq q u) (h * q) *
-            ((Li (xq q - h * q) - Li (zq q u)) + (Li (xq q) - Li (h * q)))
+            (((Nat.primeCounting ⌊xq q - h * q⌋₊ : ℝ) - Nat.primeCounting ⌊zq q u⌋₊)
+              + ((Nat.primeCounting ⌊xq q⌋₊ : ℝ) - Nat.primeCounting (h * q)))
           - xq q / (Real.log (xq q)) ^ 2
           ≤ ∑ h ∈ Ico 1 (Kq q), ((Mplus q u h : ℝ) + Mminus q u h)) := by
   obtain ⟨η, hη, s₀, hFL⟩ := FL_setup
-  obtain ⟨C, hC⟩ := bombieri_vinogradov 4 (by norm_num)
+  obtain ⟨C, hC⟩ := bv_pi 4 (by norm_num)
   refine ⟨η, hη, ⌈4 * s₀⌉₊ + 2, fun u hu => ?_⟩
   have hu0 : u ≠ 0 := by omega
   have hu2 : 2 ≤ u := by omega
@@ -1251,7 +1232,8 @@ theorem sieve_dim1 : ∃ η : ℝ → ℝ, Tendsto (fun s => s * η s) atTop (�
         rw [← Real.log_exp (4 * C')]; exact Real.log_le_log (Real.exp_pos _) hqe
       have hper : ∀ h ∈ Ico 1 (Kq q),
           (1 - η (u / 4)) * V (zq q u) * (S2 (zq q u) (h * q) *
-            ((Li (xq q - h * q) - Li (zq q u)) + (Li (xq q) - Li (h * q))))
+            (((Nat.primeCounting ⌊xq q - h * q⌋₊ : ℝ) - Nat.primeCounting ⌊zq q u⌋₊)
+              + ((Nat.primeCounting ⌊xq q⌋₊ : ℝ) - Nat.primeCounting (h * q))))
             - 4 * (C * xq q / Real.log (xq q) ^ 4)
           ≤ (Mplus q u h : ℝ) + Mminus q u h := by
         intro h hh
@@ -1267,8 +1249,7 @@ theorem sieve_dim1 : ∃ η : ℝ → ℝ, Tendsto (fun s => s * η s) atTop (�
       -- the error term
       have hB : 0 ≤ C * xq q / Real.log (xq q) ^ 4 := by
         have h1 : bvS (xq q) (xq q) (bminus 2) ≤ C * xq q / Real.log (xq q) ^ 4 := by
-          have := hC (xq q) (by linarith) (bminus 2) (fun _ => xq q) (bminus_coprime 2)
-            (fun _ => ⟨by linarith, le_rfl⟩)
+          have := hC (xq q) (by linarith) (xq q) (by linarith) le_rfl (bminus 2) (bminus_coprime 2)
           rw [show (4 : ℝ) = ((4 : ℕ) : ℝ) by norm_num, Real.rpow_natCast] at this
           exact this
         exact (bvS_nonneg _ _ _).trans h1
