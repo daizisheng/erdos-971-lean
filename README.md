@@ -16,23 +16,19 @@ Lean 4 formalization of an affirmative answer to
 The statement `Erdos971Statement` is copied verbatim from
 [google-deepmind/formal-conjectures](https://github.com/google-deepmind/formal-conjectures/blob/main/FormalConjectures/ErdosProblems/971.lean).
 
-## What is proved, and what is assumed
+## Dependencies and credits
 
-| input | status |
-|---|---|
-| prime number theorem, `Li y ∼ y / log y` | **proved** — from [PrimeNumberTheoremAnd](https://github.com/AlexKontorovich/PrimeNumberTheoremAnd) (`pi_alt'`, `integral_div_log_asymptotic`) |
-| Mertens' product theorem | **proved** — from PrimeNumberTheoremAnd (`Mertens.prod_one_minus_div_prime_eq`, `Mertens.E₃.abs_le`) |
-| Bombieri–Vinogradov | **proved** — from [kimihiro64/bombieri-vinogradov](https://github.com/kimihiro64/bombieri-vinogradov) (`weighted_to_prime_counting`) |
-| fundamental lemma of sieve theory | **proved** in `Erdos971/FL/` — a logarithmically blocked Bonferroni (Brun-type) sieve with η(s) = 8K³e^{−(log 2/4)s}; no analytic input |
+No axioms beyond Lean's standard three and no `sorry`. The classical inputs come from:
 
-Everything else — the occupancy inequality, the singular-series averages, the sieve applications,
-the moment bounds and the assembly — is machine-checked. The derivations of the three imported theorems
-into the exact forms used here are in `Erdos971/Bridge.lean`.
+- prime number theorem, `Li y ∼ y / log y`, Mertens' product theorem — [PrimeNumberTheoremAnd](https://github.com/AlexKontorovich/PrimeNumberTheoremAnd) (`pi_alt'`, `integral_div_log_asymptotic`, `Mertens.E₃.abs_le`);
+- Bombieri–Vinogradov — [kimihiro64/bombieri-vinogradov](https://github.com/kimihiro64/bombieri-vinogradov) (`weighted_to_prime_counting`);
+- the fundamental lemma of sieve theory is proved here (`Erdos971/FL/`, a logarithmically blocked Bonferroni sieve).
 
-**Trust base:** Lean's kernel, Mathlib, and the external libraries PrimeNumberTheoremAnd and
-kimihiro64/bombieri-vinogradov (with its dependency Robin1984), whose theorems used here were checked with
-`#print axioms` to depend only on the three standard axioms. The problem statement is trusted to be the
-formal-conjectures one.
+`Erdos971/Bridge.lean` derives the exact forms used from the external theorems. All of this, including the
+dependencies, is compiled from source and kernel-checked; `leanchecker` replays every `Erdos971.*` module.
+
+**What must be taken on trust:** only the Lean kernel, and that `Erdos971Statement` (copied verbatim from
+formal-conjectures) faithfully states Erdős #971 — read `Erdos971/Statement.lean`, it is five lines.
 
 ## Build
 
