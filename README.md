@@ -31,11 +31,12 @@ Friedlander–Goldston's own method (§8 of their paper), using rough numbers in
 | `Erdos971/Axioms.lean` | the four analytic axioms (the only unproved inputs) |
 | `Erdos971/Defs.lean` | objects of the proof |
 | `Erdos971/Occupancy.lean` | Lemma 1: finite occupancy inequality (done, no axioms) |
-| `Erdos971/Scale.lean` | scale facts: PNT/Mertens consequences (in progress) |
-| `Erdos971/Singular.lean` | finite singular-series estimates, Lemmas 2 and 3 (in progress) |
+| `Erdos971/Scale.lean` | scale facts: PNT/Mertens consequences (done) |
+| `Erdos971/Singular.lean` | finite singular-series estimates, Lemmas 2 and 3 (done, no axioms) |
 | `Erdos971/Sieve.lean` | fundamental-lemma and Bombieri–Vinogradov applications (in progress) |
-| `Erdos971/Moments.lean` | third moment, mixed moment (in progress) |
+| `Erdos971/MomentsComb.lean` | counting identities for the moments (done, no axioms) |
+| `Erdos971/Moments.lean` | third moment, mixed moment (done) |
 | `Erdos971/Main.lean` | assembly: `erdos_971 : Erdos971Statement` (done, modulo the modules above) |
 
 See `BLUEPRINT.md` for the proof plan. Current `#print axioms Erdos971.erdos_971` still includes `sorryAx`
-from the unfinished modules.
+from `Sieve.lean` (the only unfinished module).
